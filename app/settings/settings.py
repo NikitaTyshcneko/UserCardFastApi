@@ -18,3 +18,7 @@ DATABASE_URL = f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
 # Log connection parameters
 logging.debug(f"Connecting to database with URL: {DATABASE_URL}")
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*30
+MY_ALGORITHMS = os.getenv('MY_ALGORITHMS')
+SECRET = os.getenv('SECRET')

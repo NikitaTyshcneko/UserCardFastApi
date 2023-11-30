@@ -19,5 +19,4 @@ class CardSchema(BaseModel):
 
 
 class UserCardSchema(BaseModel):
-    username: str
     name: str

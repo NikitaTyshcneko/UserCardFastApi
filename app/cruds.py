@@ -17,6 +17,12 @@ class UserCruds:
             raise HTTPException(status_code=404, detail="User with this id does not exist")
         return UserSchema(id=user.id, username=user.username, password=user.password)
 
+    async def get_user_by_username(self, username: str):
+        user = await self.db.fetch_one(users.select().where(users.c.username == username))
+        if user==None:
+            raise HTTPException(status_code=404, detail="User with this username does not exist")
+        return UserWithPasswordSchema(id=user.id, username=user.username, password=user.password)
+
     async def get_user_all(self):
         user_db = await self.db.fetch_all(users.select())
         if user_db==None:
@@ -33,13 +39,13 @@ class UserCruds:
         await self.db.execute(query)
         return "success"
 
-    async def update_user(self, new_user: UserSchema, id: int):
-        query = users.update().values(username=new_user.username, password=new_user.password).where(users.c.id == id)
+    async def update_user(self, new_user: UserWithPasswordSchema, username:str):
+        query = users.update().values(username=new_user.username, password=pwd_context.hash(new_user.password)).where(users.c.username == username)
         await self.db.execute(query)
         return "success"
 
-    async def delete_user(self, id: int):
-        query = users.delete().where(users.c.id == id)
+    async def delete_user(self, username:str):
+        query = users.delete().where(users.c.username == username)
         await self.db.execute(query)
         return "success"
 
@@ -99,11 +105,13 @@ class UserCardCrud:
 
         return [CardSchema(id=card.id, name=card.name, description=card.description, resourceURI=card.resourceURI) for card in cards_db]
 
-    async def add_card_to_user(self, new_user_card: UserCardSchema):
-        user = await self.db.fetch_one(users.select().where(users.c.username == new_user_card.username))
-        card = await self.db.fetch_one(cards.select().where(cards.c.name == new_user_card.name))
-        if card==None or user==None:
+    async def add_card_to_user(self, card_name: str, username_from_jwt):
+        user = await self.db.fetch_one(users.select().where(users.c.username == username_from_jwt))
+        card = await self.db.fetch_one(cards.select().where(cards.c.name == card_name))
+        if user==None:
             raise HTTPException(status_code=404, detail="User not found")
+        if card==None:
+            raise HTTPException(status_code=404, detail="Card was not found")
         query = user_card.insert().values(user_id=user.id, card_id=card.id)
         await self.db.execute(query)
         return "success"
